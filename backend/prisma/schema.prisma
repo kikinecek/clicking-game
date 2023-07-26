@@ -1,0 +1,44 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("PRISMA_DATABASE_URL")
+}
+
+model Customer {
+  id             String       @id @default(uuid())
+  email          String
+  hashedPassword String
+  Click          ClickAudit[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([email])
+}
+
+model Team {
+  id        String       @id @default(uuid())
+  name      String
+  clicks    Int
+  Click     ClickAudit[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@unique([name])
+}
+
+model ClickAudit {
+  id                  String   @id @default(uuid())
+  clickedByCustomer   Customer @relation(fields: [clickedByCustomerId], references: [id])
+  clickedByCustomerId String
+  clickedByTeam       Team     @relation(fields: [clickedByTeamId], references: [id])
+  clickedByTeamId     String
+  clicks              Int
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
