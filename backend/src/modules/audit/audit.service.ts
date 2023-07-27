@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CustomerClicks } from './models/customer-clicks.model';
 
@@ -16,12 +16,19 @@ export class AuditService {
   }
 
   async getCustomersClicksByTeamId(teamId: string): Promise<CustomerClicks[]> {
-    const customerClicks = await this.prismaService.clickAudit.groupBy({
-      by: ['clickedByCustomerId'],
-      where: { clickedByTeamId: teamId },
-      _count: true,
-    });
+    try {
+      const customerClicks = await this.prismaService.clickAudit.groupBy({
+        by: ['clickedByCustomerId'],
+        where: { clickedByTeamId: teamId },
+        _count: true,
+      });
 
-    return this.transformToCustomersClicks(customerClicks);
+      return this.transformToCustomersClicks(customerClicks);
+    } catch (err) {
+      console.log(err);
+      throw new InternalServerErrorException(
+        err.message ?? 'Something went wrong during prisma query',
+      );
+    }
   }
 }
