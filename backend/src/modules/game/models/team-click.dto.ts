@@ -1,4 +1,4 @@
 export class TeamClickDto {
   teamName: string;
-  numberOfClick?: number | undefined;
+  numberOfClicks?: number | undefined;
 }

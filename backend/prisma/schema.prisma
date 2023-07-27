@@ -14,7 +14,7 @@ model Customer {
   id             String       @id @default(uuid())
   email          String
   hashedPassword String
-  Click          ClickAudit[]
+  ClickAudit     ClickAudit[]
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
@@ -22,12 +22,12 @@ model Customer {
 }
 
 model Team {
-  id        String       @id @default(uuid())
-  name      String
-  clicks    Int
-  Click     ClickAudit[]
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  id         String       @id @default(uuid())
+  name       String
+  clicks     Int
+  ClickAudit ClickAudit[]
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
 
   @@unique([name])
 }
@@ -40,5 +40,4 @@ model ClickAudit {
   clickedByTeamId     String
   clicks              Int
   createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
 }

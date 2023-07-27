@@ -1,10 +1,15 @@
 import * as bcrypt from 'bcrypt';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { CustomerService } from '../customer/customer.service';
 import { SignUpDto } from './models/sign-up.dto';
 import { SignInDto } from './models/sign-in.dto';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { Customer } from '../customer/models/customer.model';
 
 @Injectable()
 export class AuthenticationService {
@@ -16,20 +21,20 @@ export class AuthenticationService {
     private jwtService: JwtService,
   ) {}
 
-  async signUp(data: SignUpDto) {
+  async signUp(data: SignUpDto): Promise<void> {
     const { email, password } = data;
     if (await this.customerService.getCustomerByEmail(email)) {
-      throw new Error('User already exists!');
+      throw new UnauthorizedException('User already exists!');
     }
 
     const hashedPassword = await bcrypt.hash(password, this.SALT);
     await this.customerService.createCustomer({ email, hashedPassword });
   }
 
-  async signIn(data: SignInDto) {
+  async signIn(data: SignInDto): Promise<{ access_token: string }> {
     const { email, password } = data;
 
-    const customerDb = await this.customerService.getCustomerByEmail(email);
+    const customerDb = await this.customerService.getCustomerCredentials(email);
     if (!customerDb) {
       throw new UnauthorizedException('Incorrect email or password');
     }
