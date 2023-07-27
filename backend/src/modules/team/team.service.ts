@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ServiceOptions } from 'src/shared-models/services';
 import { AuditService } from '../audit/audit.service';
 import { CustomerClicks } from '../audit/models/customer-clicks.model';
@@ -40,44 +44,83 @@ export class TeamService {
     const { pagination } = selectOptions ?? {};
     const { skip, take } = pagination ?? {};
 
-    return await this.prismaService.team.findMany({
-      skip,
-      take,
-      orderBy: { clicks: 'desc' },
-    });
+    try {
+      return await this.prismaService.team.findMany({
+        skip,
+        take,
+        orderBy: { clicks: 'desc' },
+      });
+    } catch (err) {
+      console.log(err);
+      throw new InternalServerErrorException(
+        err.message ?? 'Something went wrong during prisma query',
+      );
+    }
   }
 
   async getTeamByName(name: string): Promise<Team | null> {
-    return await this.prismaService.team.findUnique({ where: { name } });
-  }
-
-  async getTeamWithAuditByName(name: string): Promise<TeamWithAudit | null> {
-    const team = await this.prismaService.team.findUnique({
-      where: { name },
-    });
-
-    if (!team) {
-      return null;
-    }
-
-    const teamCustomerClicks =
-      await this.auditService.getCustomersClicksByTeamId(team.id);
-
-    const customers = await this.customerService.getCustomersByIds(
-      teamCustomerClicks.map((tcc) => tcc.customerId),
-    );
-
-    if (teamCustomerClicks.length !== customers.length) {
+    try {
+      return await this.prismaService.team.findUnique({ where: { name } });
+    } catch (err) {
+      console.log(err);
       throw new InternalServerErrorException(
-        'There is some inconsistency between customers and audits in db',
+        err.message ?? 'Something went wrong during prisma query',
       );
     }
+  }
 
-    return this.transformToTeamWithAudits(team, teamCustomerClicks, customers);
+  async getTeamWithAuditByName(name: string): Promise<TeamWithAudit> {
+    try {
+      const team = await this.prismaService.team.findUnique({
+        where: { name },
+      });
+
+      if (!team) {
+        throw new NotFoundException('Team not found');
+      }
+
+      const teamCustomerClicks =
+        await this.auditService.getCustomersClicksByTeamId(team.id);
+
+      const customers = await this.customerService.getCustomersByIds(
+        teamCustomerClicks.map((tcc) => tcc.customerId),
+      );
+
+      if (teamCustomerClicks.length !== customers.length) {
+        throw new InternalServerErrorException(
+          'There is some inconsistency between customers and audits in db',
+        );
+      }
+
+      return this.transformToTeamWithAudits(
+        team,
+        teamCustomerClicks,
+        customers,
+      );
+    } catch (err) {
+      console.log(err);
+
+      if (this.prismaService.isPrismaError(err)) {
+        throw new InternalServerErrorException(
+          err.message ?? 'Something went wrong during prisma query',
+        );
+      }
+
+      throw err;
+    }
   }
 
   async createTeam(name: string): Promise<Team> {
-    return await this.prismaService.team.create({ data: { name, clicks: 0 } });
+    try {
+      return await this.prismaService.team.create({
+        data: { name, clicks: 0 },
+      });
+    } catch (err) {
+      console.log(err);
+      throw new InternalServerErrorException(
+        err.message ?? 'Something went wrong during prisma query',
+      );
+    }
   }
 
   async getTeamByNameOrCreate(name: string): Promise<Team> {
@@ -89,9 +132,16 @@ export class TeamService {
 
     const { prismaTransaction } = options ?? {};
 
-    return await (prismaTransaction ?? this.prismaService).team.update({
-      where: { name: teamName },
-      data: { clicks: { increment: clicksToAdd ?? 1 } },
-    });
+    try {
+      return await (prismaTransaction ?? this.prismaService).team.update({
+        where: { name: teamName },
+        data: { clicks: { increment: clicksToAdd ?? 1 } },
+      });
+    } catch (err) {
+      console.log(err);
+      throw new InternalServerErrorException(
+        err.message ?? 'Something went wrong during prisma query',
+      );
+    }
   }
 }

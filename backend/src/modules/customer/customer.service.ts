@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Customer } from './models/customer.model';
 import { CreateCustomerDto } from './models/create-customer.dto';
@@ -18,35 +18,63 @@ export class CustomerService {
   async getCustomersByIds(id: string[]): Promise<Customer[]> {
     const orWhere = id.map((id) => ({ id }));
 
-    return await this.prismaService.customer.findMany({
-      where: { OR: orWhere },
-      select: SELECT_CUSTOMER_EXCLUDE_PWD,
-    });
+    try {
+      return await this.prismaService.customer.findMany({
+        where: { OR: orWhere },
+        select: SELECT_CUSTOMER_EXCLUDE_PWD,
+      });
+    } catch (err) {
+      console.log(err);
+      throw new InternalServerErrorException(
+        err.message ?? 'Something went wrong during prisma query',
+      );
+    }
   }
 
   async getCustomerByEmail(email: string): Promise<Customer | null> {
-    return await this.prismaService.customer.findUnique({
-      where: { email },
-      select: SELECT_CUSTOMER_EXCLUDE_PWD,
-    });
+    try {
+      return await this.prismaService.customer.findUnique({
+        where: { email },
+        select: SELECT_CUSTOMER_EXCLUDE_PWD,
+      });
+    } catch (err) {
+      console.log(err);
+      throw new InternalServerErrorException(
+        err.message ?? 'Something went wrong during prisma query',
+      );
+    }
   }
 
   async getCustomerCredentials(
     email: string,
   ): Promise<CustomerCredentials | null> {
-    return await this.prismaService.customer.findUnique({
-      where: { email },
-      select: {
-        id: true,
-        email: true,
-        hashedPassword: true,
-      },
-    });
+    try {
+      return await this.prismaService.customer.findUnique({
+        where: { email },
+        select: {
+          id: true,
+          email: true,
+          hashedPassword: true,
+        },
+      });
+    } catch (err) {
+      console.log(err);
+      throw new InternalServerErrorException(
+        err.message ?? 'Something went wrong during prisma query',
+      );
+    }
   }
 
   async createCustomer(data: CreateCustomerDto): Promise<Customer> {
-    return await this.prismaService.customer.create({
-      data,
-    });
+    try {
+      return await this.prismaService.customer.create({
+        data,
+      });
+    } catch (err) {
+      console.log(err);
+      throw new InternalServerErrorException(
+        err.message ?? 'Something went wrong during prisma query',
+      );
+    }
   }
 }
